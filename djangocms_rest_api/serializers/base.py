@@ -34,7 +34,7 @@ class PageSerializer(RequestSerializer, serializers.ModelSerializer):
         fields = [
             'id', 'title', 'placeholders', 'creation_date', 'changed_date', 'publication_date',
             'publication_end_date', 'in_navigation', 'template', 'is_home', 'languages', 'parent',
-            'site', 'page_title', 'menu_title', 'meta_description', 'slug', 'url', 'path',
+            'node', 'page_title', 'menu_title', 'meta_description', 'slug', 'url', 'path',
             'absolute_url', 'redirect'
         ]
 
