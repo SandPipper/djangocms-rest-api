@@ -28,12 +28,13 @@ class PageSerializer(RequestSerializer, serializers.ModelSerializer):
     languages = serializers.ListField(source='get_languages')
     url = serializers.SerializerMethodField()
     redirect = serializers.SerializerMethodField()
+    parent_page = serializers.SerializerMethodField()
 
     class Meta:
         model = Page
         fields = [
             'id', 'title', 'placeholders', 'creation_date', 'changed_date', 'publication_date',
-            'publication_end_date', 'in_navigation', 'template', 'is_home', 'languages', 'parent',
+            'publication_end_date', 'in_navigation', 'template', 'is_home', 'languages', 'parent_page',
             'node', 'page_title', 'menu_title', 'meta_description', 'slug', 'url', 'path',
             'absolute_url', 'redirect'
         ]
@@ -67,6 +68,11 @@ class PageSerializer(RequestSerializer, serializers.ModelSerializer):
 
     def get_redirect(self, obj):
         return obj.get_redirect(self.language)
+    
+    def get_parent_page(self, obj):
+        parent_page = obj.get_parent_page()
+        if parent_page:
+            return parent_page.id
 
     @classmethod
     def many_init(cls, *args, **kwargs):
