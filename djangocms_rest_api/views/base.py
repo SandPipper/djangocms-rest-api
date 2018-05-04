@@ -3,16 +3,44 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.translation import ugettext as _
+from django.template.loader import render_to_string
 from cms.models import Page, Placeholder, CMSPlugin
+from cms.views import details
 from rest_framework import mixins
 from rest_framework import viewsets
+from rest_framework import mixins
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from djangocms_rest_api.serializers import (
     PageSerializer, PlaceHolderSerializer, BasePluginSerializer, get_serializer_class
 )
 from djangocms_rest_api.views.utils import check_if_page_is_visible
+
+from bs4 import BeautifulSoup
+
+
+class GetBaseContent(APIView):
+    """
+    Parse header and footer tags
+    """
+    def get(self, request, **kwargs):
+        rendered = details(request, '')
+
+        soup = BeautifulSoup(rendered.rendered_content)
+
+        content = {
+            'header': soup.find('header'),
+            'footer': soup.find('footer')
+        }
+
+        # remove en/ from links
+        for key, value in content.items():
+            content[key] = str(value).replace('en/', '')
+
+        return Response(data=content)
 
 
 class PageViewSet(viewsets.ReadOnlyModelViewSet):

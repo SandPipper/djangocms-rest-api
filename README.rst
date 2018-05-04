@@ -9,7 +9,9 @@ djangocms-rest-api uses Django REST framework to serve django CMS data through a
 Installation
 ------------
 
-* pip install djangocms-rest-api
+* git clone https://github.com/SandPipper/djangocms-rest-api
+* add djangocms_rest_api folder to your project
+* pip install beautifulsoup4
 * Edit ``INSTALLED_APPS``::
 
     INSTALLED_APPS = [
@@ -26,6 +28,9 @@ Installation
         url(r'^api/', include('djangocms_rest_api.urls', namespace='api')),
         ...
     ]
+
+* api/pages/ - to fetch all pages with their placeholders and plugins
+* api/contents/ - to fetch header and footer
 
 * That's all!
 
