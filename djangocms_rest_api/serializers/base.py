@@ -13,7 +13,40 @@ from rest_framework.serializers import ListSerializer
 from djangocms_rest_api.serializers.mapping import plugin_serializer_mapping
 from djangocms_rest_api.serializers.utils import RequestSerializer
 
+# for aldryn_forms SelectField
+from aldryn_forms.models import Option
+
 serializer_cache = {}
+
+# code for one request with response with full data from CMS about page and her placeholders with plugins from this fork - https://github.com/DanielKirov/djangocms-rest-api/commit/c3ef49781fd01f86dbc4677fbd81ed4c3741ae8d
+class NestedPlaceHolderPluginsSerializer(RequestSerializer, serializers.ModelSerializer):
+
+    plugins = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Placeholder
+        fields = ['id', 'slot', 'plugins']
+        depth = 2
+    
+    def get_plugins(self, obj):
+         # Get the page language (PlaceHolderSerializer > PageSerializer > language
+        try:
+            language = self.parent.parent.language
+        except Exception as e:
+            print(e)
+            print(repr(e))
+            langeuage = 'en-gb'
+
+        plugins = []
+        for plugin in obj.get_plugins(language):
+            instance, this_plugin = plugin.get_plugin_instance()
+            model = getattr(this_plugin, 'model', None)
+            if model:
+                serializer = get_serializer(
+                    instance, model=getattr(plugin, 'model', None), plugin=this_plugin, context=self.context
+                )
+                plugins.append(serializer.data)
+        return plugins
 
 
 # code for one request with response with full data from CMS about page and her placeholders with plugins
@@ -172,8 +205,14 @@ class BasePluginSerializer(serializers.ModelSerializer):
             for related_object in obj._meta.related_objects:
                 if getattr(related_object, 'related_model', None) == inline.model:
                     name = related_object.name
-                    serializer = get_serializer(
-                        getattr(obj, name).all(), model=inline.model, many=True, context=self.context)
+                    # for SelectField from aldryn_forms support
+                    if name == 'option':
+                        options = Option.objects.filter(field=obj).all()
+                        serializer = get_serializer(
+                        options, model=inline.model, many=True, context=self.context)
+                    else:
+                        serializer = get_serializer(
+                            getattr(obj, name).all(), model=inline.model, many=True, context=self.context)
                     data[name] = serializer.data
                     break
         return data
@@ -281,11 +320,12 @@ def get_serializer_class(plugin=None, model=None):
     if plugin:
         serializer_class = getattr(plugin, 'serializer_class', None)
         if not serializer_class:
-            # some plguins such TextPlugin can be proxcy object and don't have __name__ attr
+            # some plguins such TextPlugin can be proxy object and don't have __name__ attr
             try:
                 serializer_class = plugin_serializer_mapping.get(plugin.__name__)
             except AttributeError:
-                pass
+                serializer_class = plugin_serializer_mapping.get(plugin.name)
+
 
     if not serializer_class:
         if not model:
